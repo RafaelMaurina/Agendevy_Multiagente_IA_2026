@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendevy</title>
+
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/cards.css">
+<link rel="stylesheet" href="css/modal.css">
+<link rel="stylesheet" href="css/agendas.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3a1 1 0 011 1v3h3a1 1 0 010 2h-3v3a1 1 0 01-2 0v-3H8a1 1 0 010-2h3V7a1 1 0 011-1z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">Agendevy</div>
+        <div class="logo-sub">Gestão da sua Clínica </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group" data-group="visao-geral">
+      <div class="nav-section-label" onclick="toggleNavGroup('visao-geral')">
+        <span>Visão geral</span>
+      </div>
+      <div class="nav-group-items">
+        <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Início
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-group" data-group="clinica">
+      <div class="nav-section-label" onclick="toggleNavGroup('clinica')">
+        <span>Clínica</span>
+        <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="nav-group-items">
+        <div class="nav-item" data-page="agendas" onclick="navigate('agendas')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Agenda
+        </div>
+        <div class="nav-item" data-page="consultas" onclick="navigate('consultas')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Consultas
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-group" data-group="cadastros">
+      <div class="nav-section-label" onclick="toggleNavGroup('cadastros')">
+        <span>Cadastros</span>
+        <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="nav-group-items">
+        <div class="nav-item" data-page="pacientes" onclick="navigate('pacientes')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          Pacientes
+        </div>
+        <div class="nav-item" data-page="profissionais" onclick="navigate('profissionais')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          Profissionais
+        </div>
+        <div class="nav-item" data-page="tipos-consulta" onclick="navigate('tipos-consulta')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Tipos de Atendimento
+        </div>
+        <div class="nav-item" data-page="anamnese-config" onclick="navigate('anamnese-config')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="9" y2="9"/>
+          </svg>
+          Perguntas Anamnese
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-group" data-group="financeiro">
+      <div class="nav-section-label" onclick="toggleNavGroup('financeiro')">
+        <span>Financeiro</span>
+        <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="nav-group-items">
+        <div class="nav-item" data-page="fluxo" onclick="navigate('fluxo')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+          </svg>
+          Fluxo de Caixa
+        </div>
+        <div class="nav-item" data-page="inadimplentes" onclick="navigate('inadimplentes')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Inadimplência
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">AD</div>
+      <div class="user-info">
+        <div class="name">Admin</div>
+        <div class="role">Administrador</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Início</span>
+    <div class="topbar-actions" id="topbar-actions"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card stat-card--link" onclick="navigate('pacientes')" title="Ver pacientes"><div class="stat-label">Pacientes</div><div class="stat-value stat-accent" id="stat-pacientes">-</div><div class="stat-sub">cadastrados</div></div>
+        <div class="stat-card stat-card--link" onclick="navigate('profissionais')" title="Ver profissionais"><div class="stat-label">Profissionais</div><div class="stat-value stat-accent" id="stat-profissionais">-</div><div class="stat-sub">ativos</div></div>
+        <div class="stat-card stat-card--link" onclick="navigate('consultas')" title="Ver consultas"><div class="stat-label">Consultas</div><div class="stat-value stat-accent" id="stat-consultas">-</div><div class="stat-sub">registradas</div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div id="dash-indicadores-mes"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <span class="card-title">Próximas consultas</span>
+        </div>
+        <div id="dash-consultas-list"></div>
+      </div>
+    </div>
+
+    <!-- PACIENTES -->
+    <div class="page" id="page-pacientes">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="pacientes-count"></span>
+        </div>
+        <div id="pacientes-busca"></div>
+        <div id="pacientes-content"></div>
+      </div>
+    </div>
+
+    <!-- PROFISSIONAIS -->
+    <div class="page" id="page-profissionais">
+      <div class="card">
+        <div class="card-header">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="search-profissionais" placeholder="Buscar profissional..." oninput="filterTable('profissionais')">
+          </div>
+          <span class="card-title" id="profissionais-count"></span>
+        </div>
+        <div id="profissionais-content"></div>
+      </div>
+    </div>
+
+    <!-- CONSULTAS -->
+    <div class="page" id="page-consultas">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="consultas-count"></span>
+        </div>
+        <div id="consultas-filtros"></div>
+        <div id="consultas-content"></div>
+      </div>
+    </div>
+
+    <!-- AGENDAS -->
+    <div class="page" id="page-agendas">
+      <div id="agendas-content"></div>
+    </div>
+
+    <!-- TIPOS DE ATENDIMENTO -->
+    <div class="page" id="page-tipos-consulta">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="tipos-consulta-count"></span>
+        </div>
+        <div id="tipos-consulta-content"></div>
+      </div>
+    </div>
+
+    <!-- ANAMNESE (CONFIGURAÇÃO DE PERGUNTAS) -->
+    <div class="page" id="page-anamnese-config">
+      <div id="anamnese-config-content"></div>
+    </div>
+
+    <!-- FLUXO DE CAIXA -->
+    <div class="page" id="page-fluxo">
+      <div id="fluxo-content"></div>
+    </div>
+
+    <!-- INADIMPLÊNCIA -->
+    <div class="page" id="page-inadimplentes">
+      <div id="inadimplentes-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Modal</span>
+      <button class="icon-btn" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/api.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/pacientes.js"></script>
+<script src="js/profissionais.js"></script>
+<script src="js/consultas.js"></script>
+<script src="js/agendas.js"></script>
+<script src="js/tipos-consulta.js"></script>
+<script src="js/fluxo-caixa.js"></script>
+<script src="js/inadimplentes.js"></script>
+<script src="js/anamnese.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

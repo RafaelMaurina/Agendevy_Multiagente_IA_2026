@@ -1,0 +1,196 @@
+{
+  "info": {
+    "name": "Agenda Médica",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Pacientes",
+      "item": [
+        {
+          "name": "Get All Pacientes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pacientes"
+          }
+        },
+        {
+          "name": "Get Paciente by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pacientes/1"
+          }
+        },
+        {
+          "name": "Create Paciente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"telefone\": \"(51) 99999-0000\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes"
+          }
+        },
+        {
+          "name": "Update Paciente",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Atualizado\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes/1"
+          }
+        },
+        {
+          "name": "Delete Paciente",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/pacientes/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profissionais",
+      "item": [
+        {
+          "name": "Get All Profissionais",
+          "request": { "method": "GET", "url": "{{baseUrl}}/profissionais" }
+        },
+        {
+          "name": "Get Profissional by ID",
+          "request": { "method": "GET", "url": "{{baseUrl}}/profissionais/1" }
+        },
+        {
+          "name": "Create Profissional",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Dra. Maria Oliveira\",\n  \"especialidade\": \"Cardiologia\"\n}"
+            },
+            "url": "{{baseUrl}}/profissionais"
+          }
+        },
+        {
+          "name": "Update Profissional",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Dra. Maria Atualizada\"\n}"
+            },
+            "url": "{{baseUrl}}/profissionais/1"
+          }
+        },
+        {
+          "name": "Delete Profissional",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/profissionais/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultas",
+      "item": [
+        {
+          "name": "Get All Consultas",
+          "request": { "method": "GET", "url": "{{baseUrl}}/consultas" }
+        },
+        {
+          "name": "Get Consulta by ID",
+          "request": { "method": "GET", "url": "{{baseUrl}}/consultas/1" }
+        },
+        {
+          "name": "Create Consulta",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome_consulta\": \"Retorno Cardiologia\",\n  \"data_hora\": \"2025-10-05T14:00:00.000Z\",\n  \"status\": \"aberta\",\n  \"paciente\": { \"id\": 1 },\n  \"profissional\": { \"id\": 1 }\n}"
+            },
+            "url": "{{baseUrl}}/consultas"
+          }
+        },
+        {
+          "name": "Update Consulta",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"finalizada\"\n}"
+            },
+            "url": "{{baseUrl}}/consultas/1"
+          }
+        },
+        {
+          "name": "Delete Consulta",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/consultas/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agendas",
+      "item": [
+        {
+          "name": "Get All Agendas",
+          "request": { "method": "GET", "url": "{{baseUrl}}/agendas" }
+        },
+        {
+          "name": "Get Agenda by ID",
+          "request": { "method": "GET", "url": "{{baseUrl}}/agendas/1" }
+        },
+        {
+          "name": "Create Agenda",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Agenda Outubro\",\n  \"profissional\": { \"id\": 1 }\n}"
+            },
+            "url": "{{baseUrl}}/agendas"
+          }
+        },
+        {
+          "name": "Update Agenda",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Agenda Novembro\"\n}"
+            },
+            "url": "{{baseUrl}}/agendas/1"
+          }
+        },
+        {
+          "name": "Delete Agenda",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/agendas/1"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

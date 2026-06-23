@@ -1,0 +1,8 @@
+httpx>=0.28
+ollama>=0.6
+mcp[cli]>=1.28
+colorama>=0.4
+
+# RAG (busca semântica)
+chromadb>=1.0
+sentence-transformers>=3.0

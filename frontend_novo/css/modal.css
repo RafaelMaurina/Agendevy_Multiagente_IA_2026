@@ -1,0 +1,223 @@
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.5);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: white;
+  border-radius: var(--radius-xl);
+  width: 460px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.04);
+  animation: modalIn 0.18s ease;
+}
+
+/* Scrollbar fina e discreta (Chrome/Edge/Safari) */
+.modal::-webkit-scrollbar { width: 6px; }
+.modal::-webkit-scrollbar-track { background: transparent; }
+.modal::-webkit-scrollbar-thumb {
+  background: var(--gray-200);
+  border-radius: 10px;
+}
+.modal::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
+
+/* Fallback (Firefox) */
+.modal { scrollbar-width: thin; scrollbar-color: var(--gray-200) transparent; }
+
+/* Variante maior - usada no modal de paciente, que tem abas com
+   tabelas (Histórico, Financeiro) e precisa de mais espaço */
+.modal--lg {
+  width: 700px;
+  max-width: 92vw;
+  border-radius: 26px;
+}
+
+.modal--lg .modal-footer {
+  border-radius: 0 0 26px 26px;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-900);
+  letter-spacing: -0.2px;
+}
+
+.modal-body { padding: 20px 24px; }
+
+.modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--gray-50);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+/* FORM */
+.form-group { margin-bottom: 16px; }
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+  letter-spacing: 0.1px;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  color: var(--gray-900);
+  background: white;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  font-family: inherit;
+  box-shadow: var(--shadow-xs);
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--blue-400);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.form-input::placeholder { color: var(--gray-400); }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* CONFIRM DIALOG */
+.confirm-dialog { text-align: center; padding: 8px 0 4px; }
+
+.confirm-dialog p {
+  color: var(--gray-600);
+  font-size: 13.5px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+.confirm-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--red-50);
+  border: 1px solid var(--red-100);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.confirm-icon svg { width: 22px; height: 22px; color: var(--red-600); }
+
+/* MODAL TABS */
+.modal-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--gray-200);
+  margin: -4px 0 18px;
+}
+
+.modal-tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-400);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.modal-tab:hover { color: var(--gray-700); }
+
+.modal-tab.active {
+  color: var(--blue-600);
+  border-bottom-color: var(--blue-500);
+}
+
+.modal-tab-content { display: none; }
+.modal-tab-content.active { display: block; }
+
+/* ANAMNESE */
+.anamnese-lista { display: flex; flex-direction: column; gap: 14px; }
+.anamnese-row { display: flex; flex-direction: column; gap: 5px; }
+.anamnese-pergunta { font-size: 13px; font-weight: 500; color: var(--gray-700); }
+.anamnese-opcoes { display: flex; gap: 16px; font-size: 13px; color: var(--gray-600); }
+.anamnese-opcoes label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* TOAST CONTAINER */
+#toast-container,
+.toast-container {
+  position: fixed !important;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  width: auto;
+  max-width: 340px;
+}
+
+/* COMANDA SALDO */
+.comanda-saldo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.saldo-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.saldo-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; }
+.saldo-valor { font-size: 17px; font-weight: 700; color: var(--gray-900); letter-spacing: -0.3px; }
+
+/* Par data + hora-24h lado a lado (substitui o <input type="datetime-local"> nativo, cujo
+   seletor de hora mostra AM/PM em navegadores configurados em inglês). */
+.data-hora-par { display: flex; gap: 8px; align-items: center; }
+.data-hora-par .form-input { flex: 1; }
+.input-hora-24h { max-width: 84px; text-align: center; font-variant-numeric: tabular-nums; }

@@ -1,0 +1,22 @@
+# Node / backend
+node_modules/
+dist/
+backend/.env
+
+# Python / agents
+agents/.venv/
+agents/.env
+agents/**/__pycache__/
+agents/**/*.pyc
+# Índice vetorial do RAG - dados derivados, não código-fonte.
+agents/rag/data/
+
+# Editor / SO
+.DS_Store
+.vscode/
+.claude/
+
+# Documentação técnica interna (não faz parte da entrega)
+CLAUDE.md
+backend/docs/ER.png
+PROXIMOS_PASSOS.md
