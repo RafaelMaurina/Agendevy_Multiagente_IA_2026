@@ -45,13 +45,13 @@ def main():
     build_index.main()
 
     pacientes = {p["nome"]: p["id"] for p in build_index.tools.listar_pacientes()}
-    joao_id = pacientes.get("João Pedro Alves")
-    assert joao_id, "Este teste pressupõe o paciente 'João Pedro Alves' cadastrado (alergia a dipirona)."
+    valdivino_id = pacientes.get("Valdivino")
+    assert valdivino_id, "Este teste pressupõe o paciente 'Valdivino' cadastrado (alergia a dipirona)."
 
     # Pergunta PURAMENTE sobre o paciente - sem tipo de consulta, sem intenção de agendar.
     plano = ResultadoPlanejador(
         intencao="consultar_paciente",
-        paciente_id=joao_id,
+        paciente_id=valdivino_id,
         pergunta_livre="o paciente tem alguma alergia a medicamentos?",
     )
     contexto = recuperador.recuperar_contexto(plano)
@@ -81,11 +81,11 @@ def main():
     # trazia só a alergia e deixava de fora a medicação contínua.
     plano_generico = ResultadoPlanejador(
         intencao="consultar_paciente",
-        paciente_id=joao_id,
+        paciente_id=valdivino_id,
         pergunta_livre="o que eu preciso saber antes de atender esse paciente?",
     )
     ctx2 = recuperador.recuperar_contexto(plano_generico)
-    # João tem só 1 resposta de anamnese neste seed; o que importa é que a recuperação genérica
+    # Valdivino tem respostas de anamnese neste seed; o que importa é que a recuperação genérica
     # use listar_contexto_paciente (score fixo 1.0) e não filtre por similaridade.
     assert ctx2.trechos_paciente, "Pergunta genérica deveria trazer a anamnese do paciente."
     assert all(t["score"] == 1.0 for t in ctx2.trechos_paciente), (

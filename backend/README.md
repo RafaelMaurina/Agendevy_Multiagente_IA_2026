@@ -59,9 +59,7 @@ agendas (calendário), consultas, tipos de atendimento, comanda financeira
 - `Consulta.tipo_consulta` é **`SET NULL`** - excluir um tipo de consulta não apaga as
   consultas já criadas com ele.
 
-Ver `docs/ER.png` para o diagrama visual e `docs/dll.sql` para o schema de referência (não é
-executado pela aplicação - apenas documentação; a fonte de verdade real são as
-**migrations** + as **entidades**).
+Ver `docs/ER.png` para o diagrama visual e `docs/dll.sql` para o schema de referência, apenas documentação.
 
 ## Regras de negócio importantes
 

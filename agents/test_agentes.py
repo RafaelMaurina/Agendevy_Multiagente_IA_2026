@@ -96,19 +96,19 @@ def cenario_1_agendamento_sem_conflito(pacientes_por_nome: dict[str, int]) -> No
 
     payload = {
         "intencao": "agendar_consulta",
-        "paciente_nome": "Renata Lima",
-        "profissional_nome": "Camila Souza",
+        "paciente_nome": "Marga Almeida",
+        "profissional_nome": "Evllyn T",
         "tipo_consulta_nome": "Fisioterapia",
         "data_hora_iso": "2026-08-20T10:00:00-03:00",
         "pergunta_livre": None,
     }
     plano = planejador.interpretar_pedido(
-        "marca uma fisioterapia pra Renata Lima com a Camila Souza dia 20/08/2026 às 10h",
+        "marca uma fisioterapia pra Marga Almeida com a Evllyn T dia 20/08/2026 às 10h",
         cliente=ClienteFalsoJSON(payload),
     )
     print("plano:", plano)
     assert plano.erro is None, f"Não esperava erro de resolução: {plano.erro}"
-    assert plano.paciente_id == pacientes_por_nome["Renata Lima"]
+    assert plano.paciente_id == pacientes_por_nome["Marga Almeida"]
     assert plano.tipo_consulta_nome == "Fisioterapia - Sessão"
 
     contexto = recuperador.recuperar_contexto(plano)
@@ -123,8 +123,8 @@ def cenario_1_agendamento_sem_conflito(pacientes_por_nome: dict[str, int]) -> No
         resultado = revisor.revisar(plano, execucao, contexto, cliente=ClienteFalsoTexto())
         print("resumo interno do revisor:\n", resultado.resumo_para_debug["resumo_textual"])
         assert resultado.sugestoes_horario == []
-        # Renata não tem nenhum crédito cadastrado e o tipo de consulta é pago -> aviso esperado.
-        assert resultado.aviso_financeiro is not None, "Esperava aviso de pendência financeira para a Renata."
+        # Marga não tem nenhum crédito cadastrado e o tipo de consulta é pago -> aviso esperado.
+        assert resultado.aviso_financeiro is not None, "Esperava aviso de pendência financeira para a Marga."
         print("\nCenário 1 OK: consulta criada de verdade na API, sem conflito, com aviso financeiro correto.")
     finally:
         # Limpeza: este teste cria uma consulta real na API. Sem isso, rodar o teste de novo
@@ -141,18 +141,18 @@ def cenario_2_agendamento_com_conflito() -> None:
     print("=" * 70)
 
     # Mesmo profissional + mesmo horário de uma consulta já existente (dado de setup assumido
-    # no banco): paciente 1 (João) já tem consulta com profissional 1 (Camila) em
+    # no banco): paciente Valdivino já tem consulta com profissional Evllyn T em
     # 2026-07-10T14:00 (UTC-3).
     payload = {
         "intencao": "agendar_consulta",
-        "paciente_nome": "Sérgio Mendes",
-        "profissional_nome": "Camila Souza",
+        "paciente_nome": "Daniels Djalma Neto Jr",
+        "profissional_nome": "Evllyn T",
         "tipo_consulta_nome": "Fisioterapia",
         "data_hora_iso": "2026-07-10T14:00:00-03:00",
         "pergunta_livre": None,
     }
     plano = planejador.interpretar_pedido(
-        "agenda uma fisioterapia pro Sérgio Mendes com a Camila Souza no dia 10/07/2026 às 14h",
+        "agenda uma fisioterapia pro Daniels Djalma Neto Jr com a Evllyn T no dia 10/07/2026 às 14h",
         cliente=ClienteFalsoJSON(payload),
     )
     assert plano.erro is None, f"Não esperava erro de resolução: {plano.erro}"
@@ -179,7 +179,7 @@ def cenario_3_consulta_sobre_paciente(pacientes_por_nome: dict[str, int]) -> Non
 
     payload = {
         "intencao": "consultar_paciente",
-        "paciente_nome": "João Pedro Alves",
+        "paciente_nome": "Valdivino",
         "profissional_nome": None,
         "tipo_consulta_nome": None,
         "data_hora_iso": None,
@@ -193,12 +193,12 @@ def cenario_3_consulta_sobre_paciente(pacientes_por_nome: dict[str, int]) -> Non
         "pergunta_livre": "o paciente tem alguma alergia a medicamentos?",
     }
     plano = planejador.interpretar_pedido(
-        "o João Pedro Alves tem alguma alergia a medicamentos que eu deveria saber antes de atendê-lo?",
+        "o Valdivino tem alguma alergia a medicamentos que eu deveria saber antes de atendê-lo?",
         cliente=ClienteFalsoJSON(payload),
     )
     assert plano.erro is None
     assert plano.intencao == "consultar_paciente"
-    assert plano.paciente_id == pacientes_por_nome["João Pedro Alves"]
+    assert plano.paciente_id == pacientes_por_nome["Valdivino"]
 
     contexto = recuperador.recuperar_contexto(plano)
     print(f"trechos do paciente recuperados: {len(contexto.trechos_paciente)}")

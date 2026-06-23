@@ -10,6 +10,21 @@ Comandos abaixo em **PowerShell** (Windows). Em Linux/macOS, troque `Copy-Item`�
 > iniciar com o Windows. Sem isso, `npm run dev`/`migration:run` falham com erro de conexão
 > (`ECONNREFUSED` ou `client password must be a string` - ver "Erros comuns" no fim).
 
+## Resumo rápido
+
+| Comando | Instrução |
+|---|---|
+| `cd backend; Copy-Item .env.example .env` | Cria o `.env` do backend |
+| `npm install` | Instala dependências do backend |
+| `npm run typeorm -- migration:run` | Cria o schema + dados de demonstração no Postgres |
+| `npm run dev` | Inicia o backend (deixe rodando) |
+| `cd agents; py -m venv .venv; .venv\Scripts\Activate.ps1` | Cria e ativa o venv Python |
+| `pip install torch --index-url https://download.pytorch.org/whl/cpu` | Instala o torch (CPU) |
+| `pip install -r requirements.txt` | Instala as dependências dos agentes |
+| `ollama pull llama3.1:8b` | Baixa o modelo local |
+| `cd ..; python -m agents.rag.build_index` | Constrói o índice do RAG |
+| `python -m agents.main --verbose` | Roda o assistente |
+
 ## 1. Backend
 
 ```powershell
@@ -59,8 +74,8 @@ python -m agents.main --verbose
 Digite `ajuda` a qualquer momento para ver exemplos de pedido e os comandos especiais
 (`listar pacientes`/`listar profissionais`/`listar tipos` - mostram quem está cadastrado de
 verdade, sem precisar do Ollama). Exemplos de pedido em linguagem natural:
-- `marca uma fisioterapia pro João Pedro Alves com a Camila Souza pra sexta às 10h`
-- `o que eu preciso saber antes de atender o João Pedro Alves?`
+- `marca uma fisioterapia pro Valdivino com a Evllyn T pra sexta às 10h`
+- `o que eu preciso saber antes de atender o Valdivino?`
 
 O assistente lembra os últimos turnos da conversa - se ele perguntar de volta (ex: "qual
 paciente?", por nome ambíguo), basta responder só a parte que faltava, sem repetir o pedido
@@ -78,4 +93,4 @@ Digite `sair` para encerrar.
 | `No module named 'agents'` | Rode a partir da **raiz** do projeto, não de dentro de `agents/` (`cd ..`). |
 | `Activate.ps1 ... execução de scripts desabilitada` | `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`, confirme com `S`, e tente de novo. |
 
-Detalhes técnicos: `backend/README.md`, `agents/README.md`, `CLAUDE.md`.
+Detalhes técnicos: `backend/README.md`, `agents/README.md`.

@@ -1,7 +1,6 @@
 # Agendevy - Camada de agentes (sistema multiagente)
 
 > Só quer **rodar**? Ver **[`../COMO_RODAR.md`](../COMO_RODAR.md)** (guia enxuto de execução).
-> Quer saber **o que falta até a entrega**? Ver **[`../PROXIMOS_PASSOS.md`](../PROXIMOS_PASSOS.md)**.
 > Este arquivo é a documentação **técnica** da camada de agentes, organizada pelas 3 etapas de
 > implementação - útil para entender as decisões de arquitetura, não como passo a passo.
 
@@ -92,15 +91,6 @@ Esperado: `resultado['chamadas']` deve conter uma chamada real a `listar_pacient
 sem chamar a tool (alucinando um número), revise o prompt da mensagem `user` para deixar mais
 explícito que ele deve consultar a tool antes de responder - comportamento conhecido de
 modelos locais menores.
-
-## Descoberta importante durante a implementação
-
-Testando a API real, confirmamos que **`POST /consultas` ignora qualquer campo `status`
-enviado no corpo** - toda consulta criada nasce com `status: "aberta"`, independente do que
-for passado. Mudar o status exige um `PUT /consultas/:id` separado. A tool `criar_consulta`
-já reflete isso na docstring. Se o `CLAUDE.md` do projeto documentar um exemplo de corpo de
-`POST /consultas` com `"status": "agendada"`, esse exemplo está impreciso e vale corrigir lá
-também.
 
 ## Próximos passos
 Etapa 2 (`rag/`): base de conhecimento, embeddings e vector store - ver
@@ -250,13 +240,13 @@ desenvolvimento: a primeira versão do teste não limpava a consulta criada, e r
 duas vezes seguidas fazia o cenário "sem conflito" falhar por conflito com a própria execução
 anterior.)
 
-1. **Agendamento simples, sem conflito** - "marca uma fisioterapia pra Renata Lima com a
-   Camila Souza dia 20/08/2026 às 10h". Cria a consulta de verdade na API e ainda detecta
-   (corretamente) que a Renata não tem crédito suficiente para o valor do atendimento.
+1. **Agendamento simples, sem conflito** - "marca uma fisioterapia pra Marga Almeida com a
+   Evllyn T dia 20/08/2026 às 10h". Cria a consulta de verdade na API e ainda detecta
+   (corretamente) que a Marga não tem crédito suficiente para o valor do atendimento.
 2. **Agendamento com conflito de horário** - pede o mesmo profissional/horário de uma consulta
    já existente. A API responde 409, o revisor calcula 2 horários livres no mesmo dia
    (`2026-07-10T13:00` e `2026-07-10T15:00`) sem nunca travar o programa.
-3. **Pergunta sobre paciente, sem agendamento** - pergunta sobre alergias do paciente João.
+3. **Pergunta sobre paciente, sem agendamento** - pergunta sobre alergias do paciente Valdivino.
    Nenhuma tool de agendamento é chamada; a resposta vem só da anamnese recuperada via RAG
    (a alergia a dipirona registrada na Etapa 1).
 
@@ -289,8 +279,5 @@ vez de -03:00 (ex: "13:00" em vez de "10:00") - na real, um problema de fuso hor
 o sistema **inteiro**, não só os agentes (inclusive causava consultas "desaparecendo" no
 calendário do frontend); e (2) a mensagem de confirmação perguntava "você gostaria de
 confirmar?" depois que a consulta **já tinha sido criada** - enganoso, parecia que não tinha
-salvado. Os dois foram corrigidos. Detalhe técnico completo no changelog do `CLAUDE.md`
-(seção 11) - vale ler antes de tocar em qualquer cálculo de data/hora neste projeto, porque o
-padrão certo (e o motivo de não usar `.getHours()`/`datetime.now()` direto) está documentado
-lá.
+salvado. Os dois foram corrigidos.
 

@@ -122,24 +122,17 @@ def main() -> None:
     print("\n=== Queries de exemplo - contexto_pacientes ===")
     pacientes = {p["nome"]: p["id"] for p in build_index.tools.listar_pacientes()}
 
-    joao_id = pacientes.get("João Pedro Alves")
-    if joao_id:
-        resultados = vs.buscar_contexto_paciente(joao_id, "o paciente tem alguma alergia a medicamentos?")
-        _print_resultados(f"paciente_id={joao_id} (João) - query sobre alergias", resultados)
+    valdivino_id = pacientes.get("Valdivino")
+    if valdivino_id:
+        resultados = vs.buscar_contexto_paciente(valdivino_id, "o paciente tem alguma alergia a medicamentos?")
+        _print_resultados(f"paciente_id={valdivino_id} (Valdivino) - query sobre alergias", resultados)
         assert resultados, "Esperava encontrar a resposta de anamnese sobre alergia a dipirona."
         assert "dipirona" in resultados[0]["texto"].lower()
 
-    sergio_id = pacientes.get("Sérgio Mendes")
-    if sergio_id:
-        resultados = vs.buscar_contexto_paciente(sergio_id, "o paciente usa algum medicamento contínuo?")
-        _print_resultados(f"paciente_id={sergio_id} (Sérgio) - query sobre medicação contínua", resultados)
-        assert resultados, "Esperava encontrar a observação sobre uso de anticoagulante."
-        assert "anticoagulante" in resultados[0]["texto"].lower()
-
-    renata_id = pacientes.get("Renata Lima")
-    if renata_id:
-        resultados = vs.buscar_contexto_paciente(renata_id, "o que preciso saber antes de atender essa paciente?")
-        _print_resultados(f"paciente_id={renata_id} (Renata, sem anamnese/observações) - deve vir vazio", resultados)
+    marga_id = pacientes.get("Marga Almeida")
+    if marga_id:
+        resultados = vs.buscar_contexto_paciente(marga_id, "o que preciso saber antes de atender essa paciente?")
+        _print_resultados(f"paciente_id={marga_id} (Marga, sem anamnese/observações) - deve vir vazio", resultados)
         assert resultados == [], "Paciente sem anamnese/observações deveria retornar lista vazia, não erro."
 
     print("\nTodos os asserts passaram - pipeline de RAG funcionando contra dados reais.")

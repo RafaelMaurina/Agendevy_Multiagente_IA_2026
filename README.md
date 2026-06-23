@@ -196,10 +196,10 @@ python -m agents.main --verbose
 As migrations `1700000000007-SeedCadastrosDemonstracao` e
 `1700000000008-SeedAnamneseConsultaDemonstracao` (`backend/src/migrations/`) populam, junto com
 o schema, os dados mínimos para os 3 cenários abaixo funcionarem **assim que o backend subir**,
-sem cadastro manual: profissionais (Camila Souza - Fisioterapia, Marina Telles - Acupuntura), os
-5 tipos de atendimento que espelham a base de conhecimento, 3 pacientes (João Pedro Alves - com
-anamnese de alergia/medicação; Renata Lima - sem crédito cadastrado, para o aviso financeiro;
-Sérgio Mendes - usado no cenário de conflito) e uma consulta já existente (João com Camila Souza,
+sem cadastro manual: profissional (Evllyn T - Fisioterapeuta), os
+5 tipos de atendimento que espelham a base de conhecimento, 3 pacientes (Valdivino - com
+anamnese de alergia/medicação; Marga Almeida - sem crédito cadastrado, para o aviso financeiro;
+Daniels Djalma Neto Jr - usado no cenário de conflito) e uma consulta já existente (Valdivino com Evllyn T,
 10/07/2026 às 14h) que o cenário 2 usa para gerar o conflito 409.
 
 ## Exemplos de uso pelo terminal
@@ -209,16 +209,16 @@ da migration de demonstração acima):
 
 **1 - Agendamento sem conflito, com aviso financeiro automático:**
 ```
-> marca uma fisioterapia pra Renata Lima com a Camila Souza dia 20/08/2026 às 10h
+> marca uma fisioterapia pra Marga Almeida com a Evllyn T dia 20/08/2026 às 10h
 Carregando resposta...
-Confirmado: consulta de Fisioterapia - Sessão para o paciente Renata Lima com o profissional
-Camila Souza salva para 2026-08-20T10:00:00-03:00.
+Confirmado: consulta de Fisioterapia - Sessão para o paciente Marga Almeida com o profissional
+Evllyn T salva para 2026-08-20T10:00:00-03:00.
 
 É importante notar que o atendimento não tem crédito suficiente para cobrir o valor e o
 lançamento financeiro permanecerá pendente até o pagamento.
 
 Além disso, foi identificada a necessidade de preparo necessário e contraindicações relevantes.
-Renata Lima deveria trazer exames de imagem recentes (ressonância ou raio-x), se houver, e não
+Marga Almeida deveria trazer exames de imagem recentes (ressonância ou raio-x), se houver, e não
 tem contraindicações atuais para realizar a fisioterapia.
 
 Precisa de mais alguma coisa?
@@ -226,7 +226,7 @@ Precisa de mais alguma coisa?
 
 **2 - Agendamento com conflito de horário (a consulta de demonstração já ocupa o slot):**
 ```
-> agenda uma fisioterapia pro Sérgio Mendes com a Camila Souza no dia 10/07/2026 às 14h
+> agenda uma fisioterapia pro Daniels Djalma Neto Jr com a Evllyn T no dia 10/07/2026 às 14h
 Carregando resposta...
 Aguardo sua confirmação para marcar uma das alternativas disponíveis no mesmo dia: 13h ou 15h.
 O paciente precisa trazer exames de imagem recentes, se houver, e informar sobre qualquer
@@ -235,10 +235,10 @@ processo infeccioso agudo ou fratura não consolidada.
 
 **3 - Pergunta sobre paciente, sem agendamento (resposta vem só da anamnese via RAG):**
 ```
-> o que eu preciso saber antes de atender o João Pedro Alves?
+> o que eu preciso saber antes de atender o Valdivino?
 Carregando resposta...
-Nada relevante foi encontrado em relação à dor lombar crônica há 2 anos do paciente João Pedro
-Alves. No entanto, informamos que ele possui alergia a dipirona. Nenhuma medicação contínua é
+Nada relevante foi encontrado em relação à dor lombar crônica há 2 anos do paciente Valdivino.
+No entanto, informamos que ele possui alergia a dipirona. Nenhuma medicação contínua é
 utilizada por ele. Precisa de mais alguma coisa?
 ```
 
@@ -248,8 +248,8 @@ precisar do Ollama.
 
 ## Reflexão crítica
 
-> Rascunho com base no histórico real de desenvolvimento (changelog em `CLAUDE.md`) - ajustem
-> para a voz da equipe antes da entrega; é só um ponto de partida, não a versão final.
+> Rascunho com base no histórico real de desenvolvimento - ajustem para a voz da equipe antes da
+> entrega; é só um ponto de partida, não a versão final.
 
 **O que mais deu certo:** dividir o pipeline em 4 agentes de responsabilidade única (planejador,
 recuperador, executor, revisor) tornou cada parte testável isoladamente, e principalmente
