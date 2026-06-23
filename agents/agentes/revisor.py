@@ -40,6 +40,18 @@ def _parse_iso_para_fuso_local(valor_iso: str) -> datetime:
     return dt.astimezone(FUSO)
 
 
+def _fmt_data_hora_br(valor_iso: str | None) -> str | None:
+    """Formata um ISO como "dd/mm/yyyy HH:mm" no fuso fixo do projeto (padrão de exibição do
+    Agendevy). Sem isso, o resumo passava o ISO cru ao LLM, que o repassava literalmente na
+    resposta (ex: "salva para 2026-06-25T14:00:00-03:00")."""
+    if not valor_iso:
+        return None
+    try:
+        return _parse_iso_para_fuso_local(valor_iso).strftime("%d/%m/%Y %H:%M")
+    except (ValueError, TypeError):
+        return valor_iso
+
+
 def _intervalos_ocupados(profissional_id: int, dia: datetime) -> list[tuple[datetime, datetime]]:
     inicio_dia = dia.replace(hour=0, minute=0, second=0, microsecond=0)
     fim_dia = inicio_dia + timedelta(days=1)
@@ -171,7 +183,8 @@ def _montar_resumo(
             # plano.data_hora_iso é o horário local (-03:00) que foi de fato solicitado e
             # enviado para a API - NUNCA usar dados.get('data_hora') aqui, que vem em UTC
             # (ex.: "13:00" em vez de "10:00") e gera uma confirmação com o horário errado.
-            f"data_hora_local={plano.data_hora_iso}, status={dados.get('status')}."
+            # Formatado como dd/mm/yyyy HH:mm para o LLM não repassar o ISO cru na resposta.
+            f"data e horário={_fmt_data_hora_br(plano.data_hora_iso)}, status={dados.get('status')}."
         )
         if aviso_financeiro:
             linhas.append(f"Aviso financeiro: {aviso_financeiro}")
