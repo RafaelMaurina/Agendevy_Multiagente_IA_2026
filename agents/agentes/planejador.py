@@ -11,6 +11,7 @@ perguntar de volta ao usuário em vez de seguir com um id errado.
 """
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -122,6 +123,7 @@ Saída: {{"intencao": "outro", "paciente_nome": null, "profissional_nome": null,
 class ResultadoPlanejador:
     intencao: str
     paciente_id: int | None = None
+    paciente_nome: str | None = None  # nome REAL resolvido (não o que o usuário digitou)
     profissional_id: int | None = None
     tipo_consulta_id: int | None = None
     tipo_consulta_nome: str | None = None
@@ -134,21 +136,34 @@ class ResultadoPlanejador:
     tipos_consulta_disponiveis: list[dict] = field(default_factory=list)
 
 
-def _resolver_paciente(nome: str | None) -> tuple[int | None, str | None]:
-    """Retorna (paciente_id, mensagem_de_erro). Erro != None significa "não resolveu"."""
+def _resolver_paciente(nome: str | None) -> tuple[int | None, str | None, str | None]:
+    """Retorna (paciente_id, paciente_nome_real, mensagem_de_erro). Erro != None significa
+    "não resolveu"."""
     if not nome:
-        return None, None
-    # buscar_paciente_por_nome já faz substring; refinamos com _casar_por_nome para que, se o
-    # nome dado bater exatamente com um paciente, não seja tratado como ambíguo só porque há
-    # outros pacientes cujo nome contém o termo (ex: "Ana" exata vs "Ana Paula", "Mariana").
-    candidatos = tools.buscar_paciente_por_nome(nome)
+        return None, None, None
+    # Busca na lista completa (não em tools.buscar_paciente_por_nome, que faz só substring
+    # exato no servidor - "Daniels Djalma Neto Jr." não bate como substring de "...Jr" sem
+    # ponto). _casar_por_nome já normaliza acento/pontuação e cobre exato/substring/palavras.
+    candidatos = tools.listar_pacientes()
     if not candidatos:
-        return None, f'Não encontrei nenhum paciente chamado "{nome}".'
-    encontrados = _casar_por_nome(nome, candidatos) or candidatos
+        return None, None, f'Não encontrei nenhum paciente chamado "{nome}".'
+    encontrados = _casar_por_nome(nome, candidatos)
+    if not encontrados:
+        return None, None, f'Não encontrei nenhum paciente chamado "{nome}".'
     if len(encontrados) > 1:
         nomes = ", ".join(p["nome"] for p in encontrados)
-        return None, f'Encontrei mais de um paciente parecido com "{nome}": {nomes}. Qual deles?'
-    return encontrados[0]["id"], None
+        return None, None, f'Encontrei mais de um paciente parecido com "{nome}": {nomes}. Qual deles?'
+    return encontrados[0]["id"], encontrados[0]["nome"], None
+
+
+def _normalizar_para_comparacao(texto: str) -> str:
+    """Remove acentos e pontuação solta (mantém letras/dígitos/espaços), para que a comparação
+    de nomes seja tolerante a diferenças como "Joao" vs "João" ou "Jr" vs "Jr." (o LLM às vezes
+    normaliza abreviações com ponto na extração, o que não bate com o nome cadastrado sem
+    ponto). Nunca usado para exibição - só para comparar."""
+    sem_acento = unicodedata.normalize("NFKD", texto)
+    sem_acento = "".join(c for c in sem_acento if not unicodedata.combining(c))
+    return "".join(c for c in sem_acento if c.isalnum() or c.isspace())
 
 
 def _casar_por_nome(termo: str, itens: list[dict]) -> list[dict]:
@@ -158,21 +173,24 @@ def _casar_por_nome(termo: str, itens: list[dict]) -> list[dict]:
     primeiro nível que produzir algum resultado, para que um match exato nunca seja tratado
     como "ambíguo" só porque também há matches parciais.
     """
-    t = termo.strip().lower()
+    t = _normalizar_para_comparacao(termo.strip().lower())
     if not t:
         return []
 
-    exatos = [i for i in itens if i["nome"].strip().lower() == t]
+    exatos = [i for i in itens if _normalizar_para_comparacao(i["nome"].strip().lower()) == t]
     if exatos:
         return exatos
 
-    substring = [i for i in itens if t in i["nome"].lower()]
+    substring = [i for i in itens if t in _normalizar_para_comparacao(i["nome"].lower())]
     if substring:
         return substring
 
     palavras = [p for p in t.split() if len(p) > 2]
     if palavras:
-        por_palavra = [i for i in itens if all(p in i["nome"].lower() for p in palavras)]
+        por_palavra = [
+            i for i in itens
+            if all(p in _normalizar_para_comparacao(i["nome"].lower()) for p in palavras)
+        ]
         if por_palavra:
             return por_palavra
 
@@ -251,7 +269,7 @@ def interpretar_pedido(
     if intencao not in INTENCOES_VALIDAS:
         intencao = "outro"
 
-    paciente_id, erro_paciente = _resolver_paciente(bruto.get("paciente_nome"))
+    paciente_id, paciente_nome, erro_paciente = _resolver_paciente(bruto.get("paciente_nome"))
     profissional_id, erro_profissional = _resolver_profissional(bruto.get("profissional_nome"))
     tipo_id, tipo_nome, erro_tipo = _resolver_tipo_consulta(bruto.get("tipo_consulta_nome"), tipos_consulta_disponiveis)
 
@@ -260,6 +278,7 @@ def interpretar_pedido(
     return ResultadoPlanejador(
         intencao=intencao,
         paciente_id=paciente_id,
+        paciente_nome=paciente_nome,
         profissional_id=profissional_id,
         tipo_consulta_id=tipo_id,
         tipo_consulta_nome=tipo_nome,

@@ -139,10 +139,12 @@ def _montar_resumo(
     # resposta para o tema agendamento (é o caso de uso dominante do assistente) e responde
     # sobre marcar consulta mesmo quando o usuário só fez uma pergunta sobre o paciente.
     if plano.intencao == "consultar_paciente":
+        nome_paciente = plano.paciente_nome or "este paciente"
         linhas.append(
-            "Esta é uma CONSULTA DE INFORMAÇÃO sobre o paciente - o usuário NÃO pediu para "
-            "agendar nada. Não peça profissional, data ou horário; não fale em marcar consulta. "
-            "Responda apenas com base nas informações do paciente listadas abaixo."
+            f"Esta é uma CONSULTA DE INFORMAÇÃO sobre o paciente {nome_paciente} - o usuário NÃO "
+            "pediu para agendar nada. Não peça profissional, data ou horário; não fale em marcar "
+            "consulta. Responda apenas com base nas informações do paciente listadas abaixo, "
+            f"referindo-se a ele pelo nome ({nome_paciente})."
         )
     elif plano.intencao == "consultar_disponibilidade":
         linhas.append(
@@ -179,7 +181,13 @@ def _montar_resumo(
         for t in contexto.trechos_paciente:
             linhas.append(f"  - {t['texto']}")
     elif plano.paciente_id and plano.intencao == "consultar_paciente":
-        linhas.append("Nenhuma informação de anamnese ou observação relevante encontrada para este paciente.")
+        nome_paciente = plano.paciente_nome or "este paciente"
+        linhas.append(
+            f"Este paciente ({nome_paciente}) não tem nenhuma anamnese ou observação cadastrada. "
+            f"Responda exatamente isso: que não há informações de histórico registradas para "
+            f"{nome_paciente}. NÃO invente nenhum dado clínico, registro, CRM ou campo que não "
+            "esteja listado aqui."
+        )
 
     if contexto.trechos_conhecimento:
         linhas.append("Trechos relevantes da base de conhecimento clínico:")
@@ -221,7 +229,14 @@ informação que falta, não complete com algo plausível). Sua tarefa:
    agendar: profissional"), diga exatamente isso e pergunte pela informação que falta - nunca
    invente um valor (nome, horário, profissional) que não esteja no resumo só para parecer
    uma resposta completa.
-8. Nunca invente ids, nomes ou horários que não estejam no resumo recebido."""
+8. Nunca invente ids, nomes ou horários que não estejam no resumo recebido.
+9. NUNCA use placeholders entre colchetes como "[nome do paciente]", "[número do CRM]" ou
+   "[data]". Se você não tem o valor real, é porque ele não está no resumo - então não mencione
+   esse campo de jeito nenhum. Escreva apenas com os valores reais que aparecem no resumo.
+10. Pacientes NÃO têm CRM, número de conselho nem registro profissional - isso é coisa de
+    profissional, não de paciente. Nunca atribua um registro/CRM a um paciente, e nunca invente
+    campos que não estejam explicitamente no resumo. Se o resumo diz que o paciente não tem
+    histórico cadastrado, apenas informe isso em uma frase curta e pare."""
 
 
 def revisar(

@@ -54,10 +54,29 @@ def test_sem_match():
     print("OK: termo sem correspondência retorna vazio.")
 
 
+def test_ignora_acento():
+    # Busca sem acento deve casar com nome cadastrado com acento, e vice-versa.
+    pacientes = _itens("João Pedro Alves")
+    r = _casar_por_nome("Joao Pedro Alves", pacientes)
+    assert len(r) == 1 and r[0]["nome"] == "João Pedro Alves", r
+    print("OK: 'Joao Pedro Alves' (sem acento) casa 'João Pedro Alves' cadastrado com acento.")
+
+
+def test_ignora_pontuacao_solta():
+    # O LLM às vezes normaliza abreviações com ponto ("Jr." em vez de "Jr") na extração - isso
+    # não deve impedir o match contra o nome cadastrado sem ponto.
+    pacientes = _itens("Daniels Djalma Neto Jr")
+    r = _casar_por_nome("Daniels Djalma Neto Jr.", pacientes)
+    assert len(r) == 1 and r[0]["nome"] == "Daniels Djalma Neto Jr", r
+    print("OK: 'Daniels Djalma Neto Jr.' (com ponto) casa 'Daniels Djalma Neto Jr' cadastrado sem ponto.")
+
+
 if __name__ == "__main__":
     test_match_por_palavra()
     test_substring()
     test_exato_vence_ambiguidade()
     test_ambiguidade_real()
     test_sem_match()
+    test_ignora_acento()
+    test_ignora_pontuacao_solta()
     print("\nTodos os testes do matcher passaram.")

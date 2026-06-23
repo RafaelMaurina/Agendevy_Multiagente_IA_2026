@@ -23,7 +23,8 @@ Comandos abaixo em **PowerShell** (Windows). Em Linux/macOS, troque `Copy-Item`â
 | `pip install -r requirements.txt` | Instala as dependÃªncias dos agentes |
 | `ollama pull llama3.1:8b` | Baixa o modelo local |
 | `cd ..; python -m agents.rag.build_index` | ConstrÃ³i o Ã­ndice do RAG |
-| `python -m agents.main --verbose` | Roda o assistente |
+| `python -m agents.main --verbose` | Roda o assistente com pensamento dos agentes|
+| `python -m agents.main` | Roda apenas o assistente
 
 ## 1. Backend
 
@@ -31,7 +32,7 @@ Comandos abaixo em **PowerShell** (Windows). Em Linux/macOS, troque `Copy-Item`â
 cd backend
 Copy-Item .env.example .env
 ```
-Edite o `.env`: troque `DB_PASSWORD=sua_senha_aqui` pela senha real do seu PostgreSQL.
+Edite o `.env`: troque `DB_PASSWORD=sua_senha_aqui` pela senha real do seu PostgreSQL (utilizei o pgAdmin).
 
 ```powershell
 npm install
