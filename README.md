@@ -24,15 +24,8 @@ Clínicas pequenas (fisioterapia, psicologia, consultórios em geral) recebem pe
 | [`frontend_novo/`](./frontend_novo/README.md) | Interface web de uso humano direto (sem o assistente) | HTML + CSS + JavaScript puro (sem build, sem framework) |
 | [`agents/`](./agents/README.md) | **O trabalho final**: sistema multiagente + RAG + MCP + terminal | Python - Ollama (LLM local), MCP, ChromaDB + sentence-transformers |
 
-O `agents/` fala com o Agendevy **só via HTTP**, exatamente como o `frontend_novo/` - nunca
-importa código TypeScript do backend. Isso significa que toda regra de negócio (conflito de
-horário, cálculo de saldo, exclusão bloqueada por histórico) vale igualmente para quem usa o
-sistema pela interface web ou pelo assistente: é a mesma API, a mesma fonte de verdade.
 
 ## Arquitetura do backend (modelo de dados e regras de negócio)
-
-A base sobre a qual o assistente atua - é por isso que nenhum agente reimplementa estas regras,
-só lê o que a API já decidiu.
 
 ### Modelo de dados
 
@@ -52,15 +45,14 @@ só lê o que a API já decidiu.
 
 `*` = obrigatório. Detalhe completo de cada coluna e índice: `backend/README.md`.
 
-### Regras de negócio (invariantes garantidos pela API)
-
+### Regras de negócio 
 1. **Conflito de horário**: `horario_fim = data_hora + duracao_minutos do tipo`; sobreposição
-   checada contra bloqueios e outras consultas do mesmo profissional → **HTTP 409**.
+   checada contra bloqueios e outras consultas do mesmo profissional -> **HTTP 409**.
 2. **Lançamento financeiro automático**: ao criar/editar uma consulta com tipo de valor
    definido, cria/atualiza um `ComandaPaciente` tentando pagar com sessões → saldo monetário →
    senão fica pendente.
 3. **Saldo nunca é persistido, só calculado** (`SaldoService`), somando todos os lançamentos do
-   paciente - é a única fonte de verdade, sempre recalculado.
+   paciente
 4. **Atomicidade**: qualquer fluxo que lê saldo e grava lançamento roda em transação, evitando
    duas requisições simultâneas debitarem o mesmo crédito duas vezes.
 5. **Um pagamento por consulta**, garantido por índice único parcial no banco (créditos sem
@@ -71,16 +63,11 @@ só lê o que a API já decidiu.
 8. **Inadimplência considera crédito disponível**: só lista quem tem dívida real, não coberta
    por saldo/sessões.
 
-### Decisões de design relevantes
-
-- **Sem autenticação** - é uma decisão de escopo (clínica única, sem multiusuário), não uma
-  lacuna esquecida.
-- **`bloqueio_horario.profissionalId` e `comanda_paciente.consultaId` são `ON DELETE SET NULL`
-  de propósito** - excluir um profissional ou uma consulta nunca deve destruir registros
-  financeiros, só desvincular.
+#### Obs
+- **Sem autenticação** - é uma decisão de escopo (clínica única, sem mult iusuário), para uso no trabalho final da discplina.
 - **`/api/agendas` (entidade `Agendamento`) não é consumido pelo frontend atual** - existe um
   CRUD completo no backend, mas a tela "Agenda" do frontend é só o calendário de `Consulta` +
-  `BloqueioHorario`. Os agentes também não usam essa entidade.
+  `BloqueioHorario`, os agentes também não usam essa entidade. Era de uma versão passada e acabou ficando.
 
 ## Arquitetura multiagente
 
@@ -89,7 +76,7 @@ texto do usuário
       │
       ▼
 ┌─────────────┐     ┌──────────────┐     ┌────────────┐     ┌────────────┐
-│ planejador  │ ──▶ │ recuperador  │ ──▶ │  executor  │ ──▶ │  revisor   │ ──▶ resposta final
+│ planejador  │ ──▶│ recuperador  │ ──▶ │  executor  │ ──▶ │  revisor   │ ──▶ resposta final
 └─────────────┘     └──────────────┘     └────────────┘     └────────────┘
  extrai intenção      busca contexto       chama a API        valida o resultado
  (LLM, JSON forçado)   (RAG, 2 coleções)    do Agendevy         e compõe a resposta
@@ -97,49 +84,23 @@ texto do usuário
                                              de LLM)             fatos vêm do Python)
 ```
 
-Pipeline fixo (não é uma negociação dinâmica entre agentes) - cada estágio tem **uma única
-responsabilidade** e produz uma saída estruturada que o próximo consome:
+Pipeline fixo (não é uma negociação dinâmica entre agentes), onde cada estágio tem uma única responsabilidade e produz uma saída que o próximo consome:
 
-1. **Planejador** (`agents/agentes/planejador.py`) - extrai a intenção e as entidades mencionadas
+1. **Planejador** (`agents/agentes/planejador.py`): extrai a intenção e as entidades mencionadas
    (paciente, profissional, tipo de atendimento, data/hora) via LLM em modo JSON forçado, e
    resolve cada nome para um id real chamando a API. Em ambiguidade (mais de um paciente
-   parecido) ou nome não encontrado, **não adivinha** - devolve um erro para o usuário responder
-   de volta. Mantém um histórico curto da conversa para resolver exatamente esse tipo de
+   parecido) ou nome não encontrado, não adivinha - devolve um erro para o usuário responder de volta. Mantém um histórico curto da conversa para resolver exatamente esse tipo de
    pergunta de esclarecimento sem o usuário repetir o pedido inteiro.
-2. **Recuperador** (`agents/agentes/recuperador.py`) - busca, nas duas coleções do RAG, os
+2. **Recuperador** (`agents/agentes/recuperador.py`): busca, nas duas coleções do RAG, os
    trechos relevantes para o pedido (anamnese do paciente e/ou conhecimento clínico do
-   procedimento). Não decide nada sobre execução.
-3. **Executor** (`agents/agentes/executor.py`) - chama a tool certa contra a API real (criar
+   procedimento).
+3. **Executor** (`agents/agentes/executor.py`): chama a tool certa contra a API real (criar
    consulta, listar disponibilidade) com os ids já resolvidos pelo planejador.
-4. **Revisor** (`agents/agentes/revisor.py`) - calcula horários alternativos em caso de conflito
-   409 (lógica determinística em Python, não "advinhação" do LLM), checa pendência financeira, e
-   só então delega ao LLM a **composição em linguagem natural** da resposta final - todos os
-   fatos que entram nessa composição já foram apurados em Python antes.
-
-### Por que multiagente, e não um agente único
-
-Um único LLM tentando, numa só chamada, (a) entender o pedido, (b) decidir o que buscar de
-contexto, (c) escolher e chamar a tool certa com os argumentos certos, e (d) compor uma resposta
-de qualidade é exatamente o tipo de tarefa sobrecarregada em que um modelo local pequeno
-(`llama3.1:8b`) tende a falhar - confundir intenção, inventar um id, ou misturar fatos com
-suposição. Dividir em estágios com responsabilidade única traz dois ganhos concretos:
-
-- **Cada prompt fica simples o suficiente para um modelo pequeno fazer de forma confiável** - o
-  planejador só extrai JSON, o revisor só traduz fatos já prontos em texto; nenhum dos dois
-  precisa "raciocinar" sobre a tarefa inteira.
-- **Lógica determinística (conflito de horário, saldo, horários alternativos) fica em Python
-  entre as chamadas de LLM**, não dentro de um prompt - o modelo nunca é solicitado a calcular
-  ou "adivinhar" algo que o sistema já sabe com certeza. O executor, por exemplo, chama a API
-  diretamente em vez de passar por outra rodada de LLM decidindo qual tool chamar: na hora em
-  que ele age, o planejador já resolveu intenção e ids de forma determinística - uma segunda
-  chamada ao modelo só adicionaria latência e mais uma chance de erro, sem ganho.
+4. **Revisor** (`agents/agentes/revisor.py`): calcula horários alternativos em caso de conflito 409, checa pendência financeira, e só então delega ao LLM a composição em linguagem natural da resposta final.
 
 ## Tools disponíveis
 
-Todas em `agents/tools/agendevy_tools.py` - funções Python "de verdade" (com type hints e
-docstring) que acessam a API REST real do Agendevy via `httpx`. Tanto o servidor MCP quanto o
-loop de tool-calling de `llm.py` derivam o schema diretamente destas funções, então a definição
-da tool nunca pode ficar dessincronizada da implementação.
+Todas em `agents/tools/agendevy_tools.py` são funções Python que acessam a API REST real do Agendevy via `httpx`. Tanto o servidor MCP quanto o loop de tool-calling de `llm.py` derivam o schema diretamente destas funções, então a definição da tool nunca pode ficar dessincronizada da implementação.
 
 | Tool | Para quê |
 |---|---|
@@ -154,28 +115,19 @@ da tool nunca pode ficar dessincronizada da implementação.
 | `checar_saldo_paciente` | Saldo de crédito do paciente (monetário e sessões), sempre calculado pela API |
 | `buscar_anamnese_paciente` | Anamnese completa do paciente (pergunta + resposta, ou `null`) |
 
-Nenhuma tool lança exceção para erros HTTP esperados (400/404/409) - todas devolvem um dict
+Nenhuma tool lança exceção para erros HTTP esperados (400/404/409), todas devolvem um dict
 `{"erro": true, "status", "mensagem"}` para a camada de agente decidir o que fazer, em vez de o
 programa quebrar.
 
 ## MCP (Model Context Protocol)
 
-`agents/mcp_server/server.py` expõe as 10 tools acima como tools MCP, via `FastMCP`. Cada
-docstring foi escrita deliberadamente específica - é o texto que um LLM do lado cliente lê para
+`agents/mcp_server/server.py` expõe as 10 tools acima como tools MCP, via `FastMCP`. Cada docstring foi escrita deliberadamente específica - é o texto que um LLM do lado cliente lê para
 decidir quando chamar cada tool. Validado com a ferramenta de inspeção do próprio SDK MCP
 (`mcp dev mcp_server/server.py`), que lista corretamente as 10 tools com seus schemas.
 
-**Nota de transparência sobre como o MCP se encaixa neste projeto**: os 4 agentes do terminal
-(`agents/main.py`) **não** passam pelo servidor MCP em tempo de execução - o executor chama
-`agendevy_tools.py` diretamente (ver "Por que multiagente" acima: uma rodada de LLM/MCP extra
-só pra escolher uma tool que já está implícita no resultado do planejador adicionaria latência
-sem ganho, com um modelo local pequeno). O MCP existe como uma **camada de acesso padronizado e
-independente** às mesmas tools, pensada para qualquer cliente MCP externo (Claude Desktop, `mcp
-dev`, ou um cliente MCP próprio) - útil, testada, e reutilizável, mas não é uma peça do caminho
-de execução do assistente de terminal. Pelo mesmo motivo, `agents/llm.py` implementa
-`chat_com_tools()` (loop genérico de tool-calling sobre o Ollama, validado isoladamente em
-`agents/test_llm_loop.py`) como o primitivo que um cliente MCP-sobre-Ollama usaria - também não
-chamado pelos 4 agentes, que preferem os modos mais simples e previsíveis `chat_json`/`chat_texto`
+**Nota sobre como o MCP**: os 4 agentes do terminal (`agents/main.py`) não passam pelo servidor MCP em tempo de execução, o executor chama `agendevy_tools.py` diretamente (uma rodada de LLM/MCP extra só pra escolher uma tool que já está implícita no resultado do planejador adicionaria latência
+sem ganho). O MCP existe como uma camada de acesso padronizado e independente às mesmas tools, pensada para qualquer cliente MCP externo, sendo testada e reutilizável, mas não é uma peça do caminho de execução do assistente de terminal. Pelo mesmo motivo, `agents/llm.py` implementa
+`chat_com_tools()` (loop genérico de tool-calling sobre o Ollama, validado isoladamente em `agents/test_llm_loop.py`) como o primitivo que um cliente MCP-sobre-Ollama usaria - também não chamado pelos 4 agentes, que preferem os modos mais simples e previsíveis `chat_json`/`chat_texto`
 (ver `agents/README.md` para o detalhe completo desta decisão).
 
 ## RAG (Retrieval-Augmented Generation)
@@ -185,52 +137,35 @@ natureza e cadência de atualização diferentes:
 
 - **`conhecimento_clinico`** - base estática (versionada no repositório), um documento por tipo
   de atendimento + 2 documentos de política geral da clínica (agendamento, pagamento/crédito).
-  Resultados filtrados por um limiar de similaridade mais exigente (0.40) - um documento de
-  procedimento errado só polui a resposta, sem ganho.
-- **`contexto_pacientes`** - dinâmica, construída a partir de dados **reais** da API (anamnese
-  respondida + observações de cada paciente). Limiar mais permissivo (0.30): informação clínica
-  é a mais crítica de errar por omissão, então prefere-se mostrar um trecho de relevância
-  duvidosa a esconder uma alergia. Para perguntas genéricas ("o que preciso saber antes de
-  atender?"), o recuperador ignora o ranqueamento por similaridade e traz **toda** a anamnese do
-  paciente - uma busca filtrada por palavra-chave deixaria de fora informação igualmente
+  Resultados filtrados por um limiar de similaridade mais exigente (0.40).
+- **`contexto_pacientes`** - dinâmica, construída a partir de dados **reais** da API (anamnese respondida + observações de cada paciente). 
+Limiar mais permissivo (0.30): informação clínica é a mais crítica de errar por omissão, então prefere-se mostrar um trecho de relevância duvidosa a esconder uma alergia. Para perguntas genéricas ("o que preciso saber antes de atender?"), o recuperador ignora o ranqueamento por similaridade e traz **toda** a anamnese do paciente - uma busca filtrada por palavra-chave deixaria de fora informação igualmente
   relevante (medicação contínua, peso, altura) que não compartilha vocabulário com a pergunta.
 
-Indexação sempre via `upsert` com ids determinísticos - reconstruir o índice (`python -m
-agents.rag.build_index`) nunca duplica documentos, só atualiza.
+Indexação sempre via `upsert` com ids determinísticos -> reconstruir o índice (`python -m agents.rag.build_index`) nunca duplica documentos, só atualiza.
 
 ## Base de conhecimento
 
-- **`agents/rag/knowledge_base/*.md`** (estática, 7 arquivos) - 5 documentos de procedimento
-  (Fisioterapia - Sessão, Avaliação Postural, RPG, Pilates Clínico, Acupuntura), cada um com
-  Descrição/Indicações/Preparo/Contraindicações, espelhando exatamente os 5 tipos de atendimento
-  cadastrados via migration (ver "Base de dados de demonstração" abaixo) - e 2 documentos de
-  política geral da clínica (agendamento, pagamento/créditos).
-- **Anamnese e observações reais dos pacientes** (dinâmica, via API) - perguntas/respostas de
-  anamnese e o campo `observacoes` de cada paciente, buscados ao vivo na API do Agendevy no
-  momento de `build_index` (é por isso que o índice é um *snapshot*: dados cadastrados depois
-  não aparecem até reconstruir).
+- **`agents/rag/knowledge_base/*.md`** (estática, 7 arquivos):
+-> 5 documentos de procedimento  (Fisioterapia - Sessão, Avaliação Postural, RPG, Pilates Clínico, Acupuntura), cada um com Descrição/Indicações/Preparo/Contraindicações, espelhando exatamente os 5 tipos de atendimento cadastrados via migration (ver "Base de dados de demonstração" abaixo) 
+-> 2 documentos de política geral da clínica (agendamento, pagamento/créditos).
+- **Anamnese e observações reais dos pacientes** (dinâmica, via API) 
+-> perguntas/respostas de anamnese e o campo `observacoes` de cada paciente, buscados ao vivo na API do Agendevy no momento de `build_index` (é por isso que o índice é um *snapshot*: dados cadastrados depois não aparecem até reconstruir).
 
 ## Embeddings e armazenamento vetorial
 
-`sentence-transformers` com o modelo **`all-MiniLM-L6-v2`** (`agents/rag/embeddings.py`) - roda
+`sentence-transformers` com o modelo **`all-MiniLM-L6-v2`** (`agents/rag/embeddings.py`): roda
 100% local e gratuito, sem depender de nenhuma API externa de embeddings nem do Ollama estar de
 pé só para isso. Vetores normalizados (norma L2 = 1) e coleções Chroma com `hnsw:space=cosine`,
-para que a distância de cosseno do Chroma corresponda diretamente a `1 - similaridade` - mais
-intuitivo de calibrar os limiares de relevância. O Chroma roda em modo `PersistentClient`
-(`agents/rag/data/`, fora do controle de versão) com `embedding_function=None`: os embeddings são
-calculados explicitamente por este módulo, nunca pelo Chroma, para nunca baixar um modelo de
-embedding próprio fora do nosso controle.
+para que a distância de cosseno do Chroma corresponda diretamente a `1 - similaridade`. O Chroma roda em modo `PersistentClient` (`agents/rag/data/`, fora do controle de versão) com `embedding_function=None`: os embeddings são calculados explicitamente por este módulo, nunca pelo Chroma, para nunca baixar um modelo de embedding próprio fora do nosso controle.
 
 ## Modelo local e forma de execução
 
-**Ollama** servindo **`llama3.1:8b`** - escolhido por suportar *tool-calling*/JSON estruturado
+**Ollama** servindo **`llama3.1:8b`**: escolhido por suportar *tool-calling*/JSON estruturado
 nativamente (essencial para o planejador) e rodar em hardware de consumo (CPU ou GPU modesta),
-sem depender de API paga. `agents/llm.py` tem três modos de chamada sobre o cliente `ollama`:
-`chat_json` (planejador - extração com schema forçado via parâmetro `format` do Ollama, mais
-confiável que só pedir "responda em JSON" no prompt), `chat_texto` (revisor - composição livre
-de texto) e `chat_com_tools` (loop genérico de tool-calling, não usado pelos 4 agentes - ver nota
-de MCP acima). Execução: `ollama pull llama3.1:8b`, servidor em `http://localhost:11434`
-(configurável via `OLLAMA_HOST`/`OLLAMA_MODEL`, ver `agents/config.py`).
+sem depender de API paga. 
+`agents/llm.py` tem três modos de chamada sobre o cliente `ollama`: `chat_json` (planejador - extração com schema forçado via parâmetro `format` do Ollama), `chat_texto` (revisor - composição livre de texto) e `chat_com_tools` (loop genérico de tool-calling). 
+Execução: `ollama pull llama3.1:8b`, servidor em `http://localhost:11434` (configurável via `OLLAMA_HOST`/`OLLAMA_MODEL`, ver `agents/config.py`).
 
 ## Dependências do projeto
 
@@ -238,7 +173,7 @@ de MCP acima). Execução: `ollama pull llama3.1:8b`, servidor em `http://localh
   `express-rate-limit`; dev: `typescript`, `ts-node`, `nodemon`, `tsconfig-paths`.
 - **Agentes** (`agents/requirements.txt`): `httpx` (cliente HTTP das tools), `ollama` (cliente
   do modelo local), `mcp[cli]` (servidor MCP), `colorama` (formatação do terminal); para o RAG:
-  `chromadb` e `sentence-transformers` (que depende de `torch` - ver nota de instalação CPU-only
+  `chromadb` e `sentence-transformers` (que depende de `torch` -> ver nota de instalação CPU-only
   no `COMO_RODAR.md`).
 
 ## Instalação e execução
@@ -316,39 +251,25 @@ precisar do Ollama.
 > Rascunho com base no histórico real de desenvolvimento (changelog em `CLAUDE.md`) - ajustem
 > para a voz da equipe antes da entrega; é só um ponto de partida, não a versão final.
 
-**O que funcionou bem.** Dividir o pipeline em 4 agentes de responsabilidade única (planejador,
+**O que mais deu certo:** dividir o pipeline em 4 agentes de responsabilidade única (planejador,
 recuperador, executor, revisor) tornou cada parte testável isoladamente, e principalmente
-manteve toda decisão objetiva (houve conflito de horário? o paciente tem crédito?) em Python
-determinístico, nunca delegada ao LLM. Isso significou que, mesmo com um modelo local pequeno
-(`llama3.1:8b`), o sistema nunca inventou um id ou um saldo - o que o modelo podia errar
-(extração de intenção, prosa final) ficava isolado do que não podia (a regra de negócio em si).
-Separar o RAG em duas coleções com limiares de relevância diferentes (estática vs. dinâmica)
-também se mostrou uma decisão acertada: resolveu um problema real e observável (trechos de
-procedimento irrelevantes aparecendo em perguntas sobre paciente).
+manteve toda decisão objetiva em Python determinístico, nunca delegada ao LLM. Isso significou que, mesmo com um modelo local pequeno (`llama3.1:8b`), o sistema não alucina inventando um id ou um saldo, protegendo também as regras de negócio.
+Separar o RAG em duas coleções com limiares de relevância diferentes (estática vs. dinâmica) tambémfoi positivo, pois resolveu um problema real de trechos de procedimento irrelevantes aparecendo em perguntas sobre paciente.
 
-**O que foi difícil.** Calibrar os limiares de similaridade do RAG exigiu iteração - um limiar
+**O que foi mais difícil:** calibrar os limiares de similaridade do RAG exigiu iteração - um limiar
 único de 0.2 deixava passar ruído, e ajustar para dois limiares (0.30 para anamnese, 0.40 para
 conhecimento clínico) só ficou claro depois de ver o problema na prática. Fuso horário foi outra
 fonte recorrente de bugs: qualquer acesso direto a `.getHours()`/`.getDate()`/`datetime.now()`
-sem fixar -03:00 explicitamente lia o fuso do sistema operacional de quem executava o processo,
-não o horário de Brasília - isso já causou consultas "desaparecendo" do calendário e horários
-errados em mensagens de confirmação, em pontos diferentes do sistema (backend, frontend e
-agentes). E só testando com o modelo real (em vez de só com LLM roteirizado nos testes
-automatizados) apareceram os bugs mais sutis: horário em UTC numa resposta, e uma mensagem de
-confirmação que perguntava "você confirma?" depois que a consulta já tinha sido salva.
+sem fixar -03:00 explicitamente lia o fuso do SO da máquina de quem executava o processo, isso já causou consultas desaparecendo do calendário e horários errados em mensagens de confirmação, em pontos diferentes do sistema (backend, frontend e agentes). E só testando com o modelo real apareceram os bugs mais sutis: horário em UTC numa resposta, mensagem de confirmação que perguntava "você confirma?" depois que a consulta já tinha sido salva, entre alguns outros conflitos.
 
-**O que faríamos diferente.** Testar com o modelo real mais cedo no processo, em vez de deixar
-isso para o final - os testes com LLM roteirizado validam a orquestração determinística, mas
-não pegam os erros de qualidade/interpretação de um modelo real, que só apareceram numa rodada
-de validação manual tardia. Também valeria decidir, desde o início da arquitetura, se o MCP
-seria de fato parte do caminho de execução do assistente ou um artefato isolado para fins de
-avaliação técnica - a ambiguidade só foi resolvida (e documentada) depois.
+**O que faria diferente hoje:** testar com o modelo real mais cedo no processo, em vez de deixar isso para o final.
+Também decidir, desde o início da arquitetura, se o MCP seria de fato parte do caminho de execução do assistente ou um artefato isolado para fins de avaliação técnica, sendo decidido só pelo final do prazo a maneira conduzida.
 
 ## Documentação complementar
 
 - **[`COMO_RODAR.md`](./COMO_RODAR.md)** - passo a passo completo de instalação/execução e
   tabela de erros comuns. **Use este arquivo para efetivamente rodar o projeto.**
-- **[`PROXIMOS_PASSOS.md`](./PROXIMOS_PASSOS.md)** - checklist do que falta até a entrega.
+
 - **[`backend/README.md`](./backend/README.md)** - modelo de dados, regras de negócio e
   referência completa da API REST.
 - **[`frontend_novo/README.md`](./frontend_novo/README.md)** - páginas, estrutura de arquivos e
@@ -356,8 +277,6 @@ avaliação técnica - a ambiguidade só foi resolvida (e documentada) depois.
 - **[`agents/README.md`](./agents/README.md)** - documentação técnica completa da camada de
   agentes, organizada pelas 3 etapas de implementação (tools+MCP, RAG, agentes+terminal) -
   detalhe de cada decisão de design e das validações automatizadas.
-- **[`CLAUDE.md`](./CLAUDE.md)** - contexto técnico condensado do projeto inteiro (modelo de
-  dados, invariantes de negócio, armadilhas conhecidas, changelog).
 
 ## Diagrama entidade-relacionamento
 
