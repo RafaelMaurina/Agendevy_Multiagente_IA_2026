@@ -84,6 +84,39 @@ def _pergunta_e_generica(pergunta: str | None) -> bool:
     return any(g in p for g in gatilhos)
 
 
+# Gatilhos de pergunta sobre o PROCEDIMENTO em si (indicações/contraindicações/preparo/
+# recomendação de tratamento), diferente de pergunta sobre o paciente. Quando a pergunta tem um
+# destes - ou menciona um tipo de atendimento pelo nome - buscamos a base de conhecimento
+# clínico mesmo que o planejador não tenha extraído um tipo_consulta_nome estruturado (ex:
+# "Valdivino pode fazer fisioterapia ou há contraindicações?" ou "qual atendimento é recomendado
+# para dores crônicas?").
+_GATILHOS_PROCEDIMENTO = (
+    "contraindica", "contra-indica", "indicaç", "indicado", "recomend", "tratamento",
+    "preparo", "pode fazer", "pode realizar", "serve para", "qual atendimento",
+    "qual procedimento", "qual tratamento", "qual terapia",
+)
+
+# Palavras que aparecem em nomes de tipo mas são genéricas demais para, sozinhas, identificar um
+# procedimento numa pergunta (evita falso positivo de "consulta"/"avaliação" etc.).
+_PALAVRAS_TIPO_GENERICAS = {
+    "consulta", "avaliacao", "avaliação", "sessao", "sessão", "rotina", "global",
+    "clinico", "clínico", "exame",
+}
+
+
+def _pergunta_sobre_procedimento(pergunta: str | None, tipos_disponiveis: list[dict]) -> bool:
+    if not pergunta:
+        return False
+    p = pergunta.lower()
+    if any(g in p for g in _GATILHOS_PROCEDIMENTO):
+        return True
+    for t in tipos_disponiveis or []:
+        for palavra in (t.get("nome") or "").lower().replace("-", " ").split():
+            if len(palavra) > 4 and palavra not in _PALAVRAS_TIPO_GENERICAS and palavra in p:
+                return True
+    return False
+
+
 def recuperar_contexto(plano: ResultadoPlanejador) -> ContextoRecuperado:
     contexto = ContextoRecuperado()
 
@@ -98,12 +131,19 @@ def recuperar_contexto(plano: ResultadoPlanejador) -> ContextoRecuperado:
             resultados = vs.buscar_contexto_paciente(plano.paciente_id, query_paciente)
             contexto.trechos_paciente = _filtrar(resultados, LIMIAR_PACIENTE, MAX_TRECHOS_PACIENTE)
 
-    # Busca conhecimento clínico apenas quando faz sentido: há um tipo de consulta concreto, ou
-    # a intenção é agendar (caso em que indicações/contraindicações do procedimento ajudam). Para
-    # uma consulta puramente sobre o paciente, sem procedimento envolvido, NÃO despejamos
-    # documentos de procedimento na resposta - era o que gerava os trechos irrelevantes.
+    # Busca conhecimento clínico quando faz sentido: há um tipo de consulta concreto, a intenção
+    # é agendar (indicações/contraindicações do procedimento ajudam), OU a própria pergunta é
+    # sobre um procedimento (ex: "pode fazer fisioterapia?", "qual atendimento para dor crônica?").
+    # Para uma consulta puramente sobre o paciente (alergia, medicação), NÃO despejamos documentos
+    # de procedimento - era o que gerava os trechos irrelevantes. O limiar (0.40) faz a triagem
+    # final, então um falso positivo na condição abaixo só custa uma busca que volta vazia.
     query_conhecimento = _query_para_conhecimento(plano)
-    if query_conhecimento and (plano.tipo_consulta_nome or plano.intencao == "agendar_consulta"):
+    busca_faz_sentido = (
+        plano.tipo_consulta_nome
+        or plano.intencao == "agendar_consulta"
+        or _pergunta_sobre_procedimento(plano.pergunta_livre, plano.tipos_consulta_disponiveis)
+    )
+    if query_conhecimento and busca_faz_sentido:
         resultados = vs.buscar_conhecimento_clinico(query_conhecimento)
         contexto.trechos_conhecimento = _filtrar(resultados, LIMIAR_CONHECIMENTO, MAX_TRECHOS_CONHECIMENTO)
 

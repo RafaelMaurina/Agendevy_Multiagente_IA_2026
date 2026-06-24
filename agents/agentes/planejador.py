@@ -11,6 +11,7 @@ perguntar de volta ao usuário em vez de seguir com um id errado.
 """
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -134,6 +135,9 @@ class ResultadoPlanejador:
     # Lista completa de tipos de consulta já buscada para montar o prompt (ver interpretar_pedido)
     # - guardada aqui para o revisor reusar em vez de chamar tools.listar_tipos_consulta() de novo.
     tipos_consulta_disponiveis: list[dict] = field(default_factory=list)
+    # True quando o pedido parece conter mais de um agendamento (o schema só extrai um) - o
+    # revisor avisa que apenas o primeiro foi tratado. Ver _detecta_multiplos_agendamentos.
+    multiplos_agendamentos: bool = False
 
 
 def _resolver_paciente(nome: str | None) -> tuple[int | None, str | None, str | None]:
@@ -149,7 +153,8 @@ def _resolver_paciente(nome: str | None) -> tuple[int | None, str | None, str | 
         return None, None, f'Não encontrei nenhum paciente chamado "{nome}".'
     encontrados = _casar_por_nome(nome, candidatos)
     if not encontrados:
-        return None, None, f'Não encontrei nenhum paciente chamado "{nome}".'
+        dica = _dica_se_existir_como(nome, tools.listar_profissionais(), "profissional")
+        return None, None, f'Não encontrei nenhum paciente chamado "{nome}".{dica}'
     if len(encontrados) > 1:
         nomes = ", ".join(p["nome"] for p in encontrados)
         return None, None, f'Encontrei mais de um paciente parecido com "{nome}": {nomes}. Qual deles?'
@@ -197,16 +202,39 @@ def _casar_por_nome(termo: str, itens: list[dict]) -> list[dict]:
     return []
 
 
+def _dica_se_existir_como(nome: str, itens: list[dict], papel: str) -> str:
+    """Se `nome` casar com algum item de `itens` (outra categoria), devolve uma dica curta -
+    usado quando o LLM põe o nome no slot errado (ex: "Evllyn" extraída como paciente, mas é
+    profissional). Devolve "" se não houver match cruzado."""
+    try:
+        if _casar_por_nome(nome, itens):
+            return f' (Há um {papel} com esse nome - se você quis dizer o {papel}, mencione isso no pedido.)'
+    except Exception:
+        pass
+    return ""
+
+
 def _resolver_profissional(nome: str | None) -> tuple[int | None, str | None]:
     if not nome:
         return None, None
     encontrados = _casar_por_nome(nome, tools.listar_profissionais())
     if not encontrados:
-        return None, f'Não encontrei nenhum profissional chamado "{nome}".'
+        dica = _dica_se_existir_como(nome, tools.listar_pacientes(), "paciente")
+        return None, f'Não encontrei nenhum profissional chamado "{nome}".{dica}'
     if len(encontrados) > 1:
         nomes = ", ".join(p["nome"] for p in encontrados)
         return None, f'Encontrei mais de um profissional parecido com "{nome}": {nomes}. Qual deles?'
     return encontrados[0]["id"], None
+
+
+def _detecta_multiplos_agendamentos(texto: str | None) -> bool:
+    """Heurística: dois ou mais verbos de agendamento ("agendar"/"marcar") no mesmo pedido
+    sugerem que o usuário tentou marcar mais de uma consulta de uma vez. O planejador só extrai
+    UMA (o schema é singular), então sinalizamos para o revisor avisar que só a primeira foi
+    tratada. Sem `\\b` no início porque o LLM/usuário às vezes erra a digitação (ex: "aagendar")."""
+    if not texto:
+        return False
+    return len(re.findall(r"agend\w*|marc\w*", texto.lower())) >= 2
 
 
 def _resolver_tipo_consulta(nome: str | None, tipos_disponiveis: list[dict]) -> tuple[int | None, str | None, str | None]:
@@ -285,6 +313,7 @@ def interpretar_pedido(
         data_hora_iso=bruto.get("data_hora_iso"),
         pergunta_livre=bruto.get("pergunta_livre"),
         tipos_consulta_disponiveis=tipos_consulta_disponiveis,
+        multiplos_agendamentos=(intencao == "agendar_consulta" and _detecta_multiplos_agendamentos(texto_usuario)),
         erro=erro,
         bruto=bruto,
     )

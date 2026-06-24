@@ -252,12 +252,32 @@ informação que falta, não complete com algo plausível). Sua tarefa:
     histórico cadastrado, apenas informe isso em uma frase curta e pare."""
 
 
+_RESPOSTA_FORA_DE_ESCOPO = (
+    "Sou o assistente de agenda da clínica. Posso agendar consultas, verificar a "
+    "disponibilidade de um profissional ou consultar informações de um paciente. Como posso "
+    "ajudar?"
+)
+
+
 def revisar(
     plano: ResultadoPlanejador,
     execucao: ResultadoExecucao,
     contexto: ContextoRecuperado,
     cliente=None,
 ) -> ResultadoRevisor:
+    # Intenção fora de escopo (saudação, agradecimento, ofensa, comentário solto): não há
+    # nenhum fato a comunicar nem ação a confirmar. Respondemos de forma FIXA, sem chamar o
+    # LLM - justamente para o modelo não "preencher o vazio" inventando uma confirmação de
+    # agendamento falsa (paciente/consulta que nunca existiram). Era a causa da alucinação em
+    # que "parabéns" virava "consulta salva para Maria Silva com João Pedro".
+    if plano.intencao == "outro" and not plano.erro:
+        return ResultadoRevisor(
+            resposta_final=_RESPOSTA_FORA_DE_ESCOPO,
+            sugestoes_horario=[],
+            aviso_financeiro=None,
+            resumo_para_debug={"resumo_textual": "Intenção fora de escopo - resposta fixa, sem LLM."},
+        )
+
     sugestoes: list[str] = []
     if execucao.tipo_erro == "conflito_409" and plano.profissional_id and plano.data_hora_iso:
         duracao = 30
@@ -281,6 +301,15 @@ def revisar(
         ],
         cliente=cliente,
     )
+
+    # Aviso de múltiplos agendamentos: anexado DETERMINISTICAMENTE (não via LLM) quando o pedido
+    # parecia ter mais de uma consulta. O sistema só processa a primeira; sem este aviso, as
+    # demais seriam ignoradas em silêncio. Só faz sentido quando a intenção era agendar.
+    if plano.intencao == "agendar_consulta" and plano.multiplos_agendamentos:
+        resposta_final = resposta_final.rstrip() + (
+            "\n\nObservação: só consigo tratar um agendamento por vez. Processei apenas o "
+            "primeiro do seu pedido - por favor, solicite o(s) próximo(s) separadamente."
+        )
 
     return ResultadoRevisor(
         resposta_final=resposta_final,

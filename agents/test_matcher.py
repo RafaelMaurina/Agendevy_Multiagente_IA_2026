@@ -10,7 +10,8 @@ Rodar a partir da raiz do repositório:
 """
 from __future__ import annotations
 
-from .agentes.planejador import _casar_por_nome
+from .agentes.planejador import _casar_por_nome, _detecta_multiplos_agendamentos
+from .agentes.recuperador import _pergunta_sobre_procedimento
 
 
 def _itens(*nomes):
@@ -71,6 +72,25 @@ def test_ignora_pontuacao_solta():
     print("OK: 'Daniels Djalma Neto Jr.' (com ponto) casa 'Daniels Djalma Neto Jr' cadastrado sem ponto.")
 
 
+def test_detecta_multiplos_agendamentos():
+    assert _detecta_multiplos_agendamentos("aagendar valdivino dia 25... agendar daniels dia 28")
+    assert _detecta_multiplos_agendamentos("agenda retorno pra Marga e marca avaliacao pro Daniels")
+    assert not _detecta_multiplos_agendamentos("marca uma fisioterapia pro Valdivino sexta às 14h")
+    assert not _detecta_multiplos_agendamentos("o que preciso saber antes de atender o Valdivino?")
+    print("OK: detecta 2+ agendamentos numa mensagem, e não dispara para um só.")
+
+
+def test_pergunta_sobre_procedimento():
+    tipos = [{"nome": "Fisioterapia - Sessão"}, {"nome": "Acupuntura"}, {"nome": "Consulta de rotina"}]
+    # Pergunta sobre o procedimento (gatilho ou nome de tipo) -> True.
+    assert _pergunta_sobre_procedimento("Valdivino pode fazer fisioterapia ou há contraindicações?", tipos)
+    assert _pergunta_sobre_procedimento("Qual atendimento é recomendado para dores crônicas?", tipos)
+    # Pergunta puramente sobre o paciente -> False (não deve poluir com docs de procedimento).
+    assert not _pergunta_sobre_procedimento("ele tem alergia a dipirona?", tipos)
+    assert not _pergunta_sobre_procedimento("o que preciso saber antes de atender?", tipos)
+    print("OK: identifica pergunta sobre procedimento sem disparar em pergunta sobre o paciente.")
+
+
 if __name__ == "__main__":
     test_match_por_palavra()
     test_substring()
@@ -79,4 +99,6 @@ if __name__ == "__main__":
     test_sem_match()
     test_ignora_acento()
     test_ignora_pontuacao_solta()
+    test_detecta_multiplos_agendamentos()
+    test_pergunta_sobre_procedimento()
     print("\nTodos os testes do matcher passaram.")
