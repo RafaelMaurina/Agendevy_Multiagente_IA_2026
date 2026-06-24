@@ -248,9 +248,6 @@ precisar do Ollama.
 
 ## Reflexão crítica
 
-> Rascunho com base no histórico real de desenvolvimento - ajustem para a voz da equipe antes da
-> entrega; é só um ponto de partida, não a versão final.
-
 **O que mais deu certo:** dividir o pipeline em 4 agentes de responsabilidade única (planejador,
 recuperador, executor, revisor) tornou cada parte testável isoladamente, e principalmente
 manteve toda decisão objetiva em Python determinístico, nunca delegada ao LLM. Isso significou que, mesmo com um modelo local pequeno (`llama3.1:8b`), o sistema não alucina inventando um id ou um saldo, protegendo também as regras de negócio.
